@@ -16,6 +16,7 @@ spec:
         model: "rubra-ai/Phi-3-mini-128k-instruct"
         tensor-parallel-size: "1"
         dtype: "bfloat16"
+        gpu-memory-utilization: "0.7"
       deployments:
       - name: VLLMDeployment
         num_replicas: 1
@@ -58,7 +59,7 @@ spec:
               name: serve
     workerGroupSpecs:
     - replicas: 1
-      minReplicas: 0
+      minReplicas: 1
       maxReplicas: 4
       groupName: gpu-group
       rayStartParams: {}
@@ -75,11 +76,11 @@ spec:
             resources:
               limits:
                 cpu: "8"
-                memory: "20Gi"
+                memory: "30Gi"
                 nvidia.com/gpu: "1"
               requests:
                 cpu: "8"
-                memory: "20Gi"
+                memory: "30Gi"
                 nvidia.com/gpu: "1"
           tolerations:
             - key: nvidia.com/gpu
