@@ -11,7 +11,7 @@ spec:
     applications:
     - name: llm
       route_prefix: /
-      import_path:  luna-llm-serve.llm:build_app
+      import_path:  phi3models.llm:build_app
       args:
         model: "rubra-ai/Phi-3-mini-128k-instruct"
         tensor-parallel-size: "1"
