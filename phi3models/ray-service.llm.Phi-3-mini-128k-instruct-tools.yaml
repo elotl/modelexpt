@@ -17,6 +17,8 @@ spec:
         tensor-parallel-size: "1"
         dtype: "bfloat16"
         gpu-memory-utilization: "0.7"
+        max_model_len: "8192"
+        max_num_seqs: "2"
       deployments:
       - name: VLLMDeployment
         num_replicas: 1
