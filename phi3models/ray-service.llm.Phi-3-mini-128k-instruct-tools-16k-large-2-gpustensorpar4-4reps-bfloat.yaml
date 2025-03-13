@@ -1,0 +1,89 @@
+#r Note: derived from: https://github.com/GoogleCloudPlatform/kubernetes-engine-samples/ai-ml/gke-ray/rayserve/llm/
+
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: llm-model-serve
+  labels:
+    app.kubernetes.io/instance: rayservice
+spec:
+  serveConfigV2: |
+    applications:
+    - name: llm
+      route_prefix: /
+      import_path:  phi3models.llm:build_app
+      args:
+        model: "rubra-ai/Phi-3-mini-128k-instruct"
+        tensor-parallel-size: "4"
+        dtype: "bfloat16"
+        max_model_len: "16384"
+        max_num_seqs: "2"
+      deployments:
+      - name: VLLMDeployment
+        num_replicas: 4
+        ray_actor_options:
+          num_cpus: 1
+          # NOTE: num_gpus is set automatically based on TENSOR_PARALLELISM
+      runtime_env:
+        working_dir: "https://github.com/elotl/modelexpt/archive/main.zip"
+        pip: ["vllm==0.5.4"]
+        env_vars:
+          MODEL_ID: "rubra-ai/Phi-3-mini-128k-instruct"
+          TENSOR_PARALLELISM: "4"
+  rayClusterConfig:
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: '0.0.0.0'
+      template:
+        metadata:
+          labels:
+            elotl-luna: "true"
+        spec:
+          containers:
+          - name: ray-head
+            image: rayproject/ray-ml:2.33.0.914af0-py311
+            resources:
+              limits:
+                cpu: "2"
+                memory: "8Gi"
+              requests:
+                cpu: "2"
+                memory: "8Gi"
+            ports:
+            - containerPort: 6379
+              name: gcs-server
+            - containerPort: 8265
+              name: dashboard
+            - containerPort: 10001
+              name: client
+            - containerPort: 8000
+              name: serve
+    workerGroupSpecs:
+    - replicas: 1
+      minReplicas: 1
+      maxReplicas: 4
+      groupName: gpu-group
+      rayStartParams: {}
+      template:
+        metadata:
+          labels:
+            elotl-luna: "true"
+          annotations:
+            node.elotl.co/instance-gpu-skus: "L4,A10G,A10,L40S"
+        spec:
+          containers:
+          - name: llm
+            image: rayproject/ray-ml:2.33.0.914af0-py311
+            resources:
+              limits:
+                cpu: "8"
+                memory: "30Gi"
+                nvidia.com/gpu: "4"
+              requests:
+                cpu: "8"
+                memory: "30Gi"
+                nvidia.com/gpu: "4"
+          tolerations:
+            - key: nvidia.com/gpu
+              effect: NoSchedule
+              operator: Exists
